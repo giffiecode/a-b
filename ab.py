@@ -1,22 +1,4 @@
-# todo  
-# 12 if someone said yes to continue defend, no further action can be conducted and stop asking them 
 
- 
-# done 
-# 1 not eliminating points / not displaying correctly 
-# 7 how to implement the on-chain defense system? ask people with defense first 
-# 4 printing the buy / steal / defense price at the beginning of each round   
-# 2 auto-defense for bought / steal points 
-# 6 display who's available for stealing 
-# 10 target: if steal exceeds undefended points, let enter again  
-# 11 defend get action point
-# 8 ask people with any defense first - continue defensing? 
-    # yes - how many defense? set. 
-    # no - clear defense point.    
-
-# later 
-# 5 vim variable_prompt? 
-# 6 push code from vs code  
 
 import getpass
 import random
