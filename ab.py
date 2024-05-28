@@ -1,3 +1,8 @@
+# solidify 
+# for all points, after one round of a/b, the point is kept and are safe from future a/b.
+# pro: incentivize buying; con: punishing late joiner 
+# use price increase speed to strike a balance  with continuous a/b and open game  
+
 import getpass
 import random
 
@@ -44,6 +49,8 @@ class Game:
         self.total_point = 100 
         self.round_estimate = 5 
         self.no_split = True
+        # increase alpha to increase price increase speed
+        self.alpha = 2
         # game param to set (dynamic)
         self.god_points = 100
         self.god_pot = 0
@@ -56,7 +63,7 @@ class Game:
 
     @property
     def point_price(self):
-        return 1 if self.round == 1 else self.god_points / (self.god_points - self.points_eliminated)
+        return 1 if self.round == 1 else (self.god_points * self.alpha) / (self.god_points - self.points_eliminated)
     
     def print_prices(self):
         self.buy_price = self.point_price
