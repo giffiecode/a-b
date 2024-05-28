@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 # todo 
 # 1 print improvements mark 
 # 2 get stealable points print fix 
 # 3 three balances: money, points, stealable points 
 # 4 print price first, then print updated players' balance at every entry 
+=======
+
+>>>>>>> 01e0aa9d0de4c7b2a78227395d6c39ffc7bc053f
 
 import getpass
 import random
