@@ -1,22 +1,8 @@
-# todo  
-# 12 if someone said yes to continue defend, no further action can be conducted and stop asking them 
-
- 
-# done 
-# 1 not eliminating points / not displaying correctly 
-# 7 how to implement the on-chain defense system? ask people with defense first 
-# 4 printing the buy / steal / defense price at the beginning of each round   
-# 2 auto-defense for bought / steal points 
-# 6 display who's available for stealing 
-# 10 target: if steal exceeds undefended points, let enter again  
-# 11 defend get action point
-# 8 ask people with any defense first - continue defensing? 
-    # yes - how many defense? set. 
-    # no - clear defense point.    
-
-# later 
-# 5 vim variable_prompt? 
-# 6 push code from vs code  
+# todo 
+# 1 print improvements mark 
+# 2 get stealable points print fix 
+# 3 three balances: money, points, stealable points 
+# 4 print price first, then print updated players' balance at every entry 
 
 import getpass
 import random
@@ -24,7 +10,7 @@ import random
 class Player:
     def __init__(self, name):
         self.name = name
-        self.money = 1000
+        self.money = 300
         self.points = 0
         self.defended_points = 0 
         self.yes_vote = 0 
@@ -42,11 +28,12 @@ class Player:
 
     def remove_expired_defenses(self):
         self.defended_points = 0
+        self.defending = False
 
 class Game:
     def __init__(self, player_names, day_period_length=60):
         self.players = [Player(name) for name in player_names]
-        self.god_points = 1000
+        self.god_points = 500
         self.god_pot = 0
         self.points_eliminated = 0
         self.dev_team_pot = 0
@@ -55,7 +42,7 @@ class Game:
 
     @property
     def point_price(self):
-        return 1 if self.round == 1 else 1000 / (1000 - self.points_eliminated)
+        return 1 if self.round == 1 else self.god_points / (self.god_points - self.points_eliminated)
     
     def print_prices(self):
         self.buy_price = self.point_price
