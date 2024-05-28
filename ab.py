@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-# todo 
-# 1 print improvements mark 
-# 2 get stealable points print fix 
-# 3 three balances: money, points, stealable points 
-# 4 print price first, then print updated players' balance at every entry 
-=======
-
->>>>>>> 01e0aa9d0de4c7b2a78227395d6c39ffc7bc053f
-
 import getpass
 import random
 
@@ -19,30 +9,50 @@ class Player:
         self.defended_points = 0 
         self.yes_vote = 0 
         self.no_vote = 0 
-        self.defending = False
+        self.defending = False  
+        self.side = 'yes'
+        self.update_stealable()
+
+    def get_stealable(self):
+        return self.points - self.defended_points
+    
+    def update_stealable(self):
+        self.stealable = self.get_stealable()
+
 
     def add_points(self, points):
         self.points += points
+        self.update_stealable()
 
     def deduct_points(self, points):
         self.points -= points
+        self.update_stealable()
 
     def add_defended_points(self, points):
         self.defended_points += points
+        self.update_stealable()
 
     def remove_expired_defenses(self):
         self.defended_points = 0
         self.defending = False
+        self.update_stealable()
 
 class Game:
     def __init__(self, player_names, day_period_length=60):
-        self.players = [Player(name) for name in player_names]
-        self.god_points = 500
+        self.players = [Player(name) for name in player_names] 
+        # game param to set (static)  
+        self.total_point = 100 
+        self.round_estimate = 5 
+        self.no_split = True
+        # game param to set (dynamic)
+        self.god_points = 100
         self.god_pot = 0
         self.points_eliminated = 0
         self.dev_team_pot = 0
         self.round = 1
-        self.day_period_length = day_period_length 
+        self.day_period_length = day_period_length  
+        # game param to set (buy steal per round limit equation)  
+        self.max = self.total_point / (len(player_names) * self.round_estimate)
 
     @property
     def point_price(self):
@@ -57,14 +67,14 @@ class Game:
         print(f"Buy price: {self.buy_price:.2f}")
         print(f"Steal price: {self.steal_price:.2f}")
         print(f"Defend price: {self.defend_price:.2f}") 
-        self.get_stealable()  # Call it here
-    
+
     def buy_points(self, player, points):
         cost = points * self.point_price
         if player.money >= cost and points <= 25:
             player.money -= cost
             player.add_points(points)
             player.defended_points += points
+            player.update_stealable() 
             self.god_points -= points
             self.god_pot += cost
             print(f"{player.name} bought {points} points for ${cost:.2f}.")
@@ -85,6 +95,7 @@ class Game:
             target.points -= points
             player.points += points
             self.dev_team_pot += dev_team_fee
+            target.update_stealable() 
             print(f"{player.name} stole {points} points from {target.name} for ${steal_cost:.2f}.")
 
     def defend_points(self, player, points):
@@ -94,21 +105,33 @@ class Game:
             player.money -= defense_cost
             player.add_defended_points(points)
             self.dev_team_pot += defense_cost
+            player.update_stealable()
             print(f"{player.name} defended {points} points for ${defense_cost:.2f}.")
 
     def night_phase(self):
         total_votes_yes = 0
         total_votes_no = 0
-        for player in self.players:
-            if player.points > 0:
-                print(f"\n{player.name}'s turn:")
-                print(f"You have {player.points} points.")
-                player.yes_vote = self.get_votes(player, 'yes')
-                player.no_vote = player.points - player.yes_vote
-
-                total_votes_yes += player.yes_vote
-                total_votes_no += player.no_vote
-
+        for player in self.players: 
+            # allow splitting, use get_votes function 
+            if not self.no_split:
+                if player.points > 0:
+                    print(f"\n{player.name}'s turn:")
+                    print(f"You have {player.points} points.")
+                    player.yes_vote = self.get_votes(player, 'yes')
+                    player.no_vote = player.points - player.yes_vote
+                    total_votes_yes += player.yes_vote
+                    total_votes_no += player.no_vote
+            else: # not allowing splitting, use get_vote_no_split
+                if player.points > 0:
+                    print(f"\n{player.name}'s turn:")
+                    print(f"You have {player.points} points.")
+                    player.side = self.get_votes_no_split(player)
+                    if player.side == 'yes':
+                        player.yes_vote = player.points
+                    else:
+                        player.no_vote = player.points
+                    total_votes_yes += player.yes_vote
+                    total_votes_no += player.no_vote
         # determine majority side and total eliminated votes 
         if total_votes_yes > total_votes_no:
             majority_side = 'yes'
@@ -130,10 +153,24 @@ class Game:
 
 	    # a/b elimination process
         for player in self.players:
-            if majority_side == 'yes':
-                player.points -= player.yes_vote
+            if majority_side == 'yes':  
+                # a/b eliminates stealable points first, so updating stealble and defended_points 
+                if player.stealable <= player.yes_vote:
+                    # a/b eliminates the rest as defended points  
+                    player.defended_points -= (player.yes_vote - player.stealable)
+                    player.points -= player.yes_vote 
+                else: 
+                    player.points -= player.yes_vote
+                player.update_stealable()
             else:
-                player.points -= player.no_vote
+                # a/b eliminates stealable points first, so updating stealble and defended_points 
+                if player.stealable <= player.no_vote:
+                    # a/b eliminates the rest as defended points 
+                    player.defended_points -= (player.no_vote - player.stealable)
+                    player.points -= player.no_vote 
+                else: 
+                    player.points -= player.no_vote
+                player.update_stealable()
         
     def distribute_god_pot(self):
         total_points = sum(player.points for player in self.players)
@@ -164,19 +201,19 @@ class Game:
         while True:
             try:
                 if action == 'steal':
-                    points = int(input(f"\n{player.name}'s turn: Enter the number of points to {action}: (max: {min(target.points - target.defended_points, 25)})").strip())
-                    if points > 25:
-                        print("The input amount exceeds the maximum of 25. Please enter a valid number.")
+                    points = int(input(f"\n{player.name}'s turn: Enter the number of points to {action}: (max: {min(target.points - target.defended_points, self.max)})").strip())
+                    if points > self.max:
+                        print(f"The input amount exceeds the maximum of {self.max}. Please enter a valid number.")
                     elif target.points - target.defended_points < points:
                         print(f"{target.name} has insufficient undefended points. Please enter a valid number.")
                     else:
                         return points
                 elif action == "buy":
-                    points = int(input(f"\n{player.name}'s turn: Enter the number of points to {action} (max: 25): ").strip())
-                    if 1 <= points <= 25:
+                    points = int(input(f"\n{player.name}'s turn: Enter the number of points to {action} (max: {self.max}): ").strip())
+                    if 1 <= points <= self.max:
                         return points
                     else:
-                        print("Invalid number of points. Please enter a number between 1 and 25.") 
+                        print("Invalid number of points. Please enter a number between 1 and {self.max}.") 
                 elif action == "defend":
                     points = int(input(f"\n{player.name}'s turn: Enter the number of points to {action} (max: {player.points}): ").strip()) 
                     if points <= player.points and points * self.defend_price <= player.money:
@@ -198,6 +235,17 @@ class Game:
             except ValueError:
                 print("Invalid input. Please enter a number.")
 
+    def get_votes_no_split(self, player):     
+        while True: 
+            try:
+                vote = input(f"\n{player.name}'s turn: Do you want to vote 'yes' or 'no' (max {player.points} points)? ").strip().lower()
+                if vote in ['yes', 'no']:
+                    return vote
+                else:
+                    print("Invalid input. Please enter 'yes' or 'no'.")
+            except ValueError:
+                print("Invalid input. Please enter 'yes' or 'no'.")
+
     def get_votes(self, player, vote_type):
         while True:
             try:
@@ -208,15 +256,6 @@ class Game:
                     print(f"Invalid number of points. Please enter a number between 0 and {player.points}.")
             except ValueError:
                 print(f"Invalid input. Please enter a number between 0 and {player.points}.")
-    
-    def get_stealable(self): 
-        print()
-        print("Stealable points in round", self.round, ":") 
-        print()
-        for player in self.players:
-            if player.defended_points < player.points:
-                stealable_points = player.points - player.defended_points
-                print(f"{player.name}: {stealable_points} stealable points.")
 
     
     def ask_defense(self, player):
@@ -232,6 +271,7 @@ class Game:
                                 player.money -= defense_cost
                                 player.defended_points = points
                                 self.dev_team_pot += defense_cost
+                                player.update_stealable()
                                 player.defending = True
                                 print(f"{player.name} defended {points} points for ${defense_cost:.2f}.")
                                 break
@@ -243,12 +283,14 @@ class Game:
                         print("Invalid input. Please enter a number.")
             else:
                 player.remove_expired_defenses()
+    
 
     def play_round(self):
-        self.print_prices()
+        self.print_prices() 
 
         # ask people with defense whether they want to continue, and reset
         for player in self.players:
+            self.print_balance()
             self.ask_defense(player) 
 
         # reset the vote and clear the defenses
@@ -258,7 +300,8 @@ class Game:
 
         for player in self.players:
             if player.defending:
-                continue
+                continue 
+            self.print_balance()
             action = self.get_action(player)
             if action == 'buy':
                 points = self.get_action_points(player, 'buy')
@@ -272,14 +315,16 @@ class Game:
                 self.defend_points(player, points)
 
         self.night_phase()
-        self.round += 1
+        self.round += 1 
 
-    def start_game(self):
-        while self.god_points > 0:
+    def print_balance(self):
             print(f"\n--- Round {self.round} ---")
             for player in self.players:
-                print(f"\n{player.name}: ${player.money:.2f}, {player.points} points") 
-            print(f"\n")    
+                print(f"\n{player.name}: ${player.money:.2f}, {player.points} points, {player.defended_points} defended points, {player.stealable} stealable points") 
+            print(f"\n") 
+
+    def start_game(self):
+        while self.god_points > 0: 
             self.play_round()
 
         self.distribute_god_pot()
