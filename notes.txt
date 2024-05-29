@@ -1,0 +1,33 @@
+# solidify 
+# for all points, after one round of a/b, the point is kept and are safe from future a/b.
+# pro: incentivize buying; con: punishing late joiner  
+# use price increase speed to strike a balance  with continuous a/b and open game 
+
+# stealing is 1.8x, bc the point wouldn't be eliminated in a/b anymore 
+# 1.2x goes to victim recoup, 0.6x goes to pot 
+# 0.2x to defend, goes to pot (fake money) / dev team (real money) 
+
+# point owner 
+# defend is expensive but can keep the effective points  
+# want to acquire more points early bc it's cheaper, but it needs more defend -> estimated optimal point 
+
+# point seeker 
+# buy is cheap but need to go through one round of a/b 
+# steal is expensive but that point is guarantee valuable  
+
+# fake vs real money 
+# fake money - everyone plays with the same amount money. more skill and entrance fee based.   
+# fake money - players might run out of fake money and the game still hasn't ended - they need to pull someone new 
+# real money - might scare off conservative people. more fun for risk-tolerant people. 
+# real money - can have level of participation of all sizes - "buy one point, defend." 
+
+# what if point price doesn't grow, and with solidify? 
+    # there is no time difference to buy or steal. it's the same at any point of the game. 
+    # doesn't deter newcomer at all. 
+    # why would anyone buy early then? with price increase, they buy early to take advantage, and they have the obligation to finish the game.  
+
+# question 
+# anyone can kick anyone out of a tg chat. is that an issue? 
+
+# conclusion 
+# steal 1.8x (1.7 recoup, 0.1 dev); 0.2x defend (dev); 1x buy; solidify -> try 

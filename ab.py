@@ -1,12 +1,15 @@
 import getpass
 import random
 
+# solidify version of a/b 
+
 class Player:
     def __init__(self, name):
         self.name = name
         self.money = 300
         self.points = 0
-        self.defended_points = 0 
+        self.defended_points = 0
+        self.current_points = 0  
         self.yes_vote = 0 
         self.no_vote = 0 
         self.defending = False  
@@ -42,8 +45,12 @@ class Game:
         self.players = [Player(name) for name in player_names] 
         # game param to set (static)  
         self.total_point = 100 
-        self.round_estimate = 5 
-        self.no_split = True
+        self.round_estimate = 5  
+        # game mode: spliting during a/b voting and solidifying points 
+        self.no_split = False
+
+        # for this branch self.solid = True. For false, please refer to the master branch 
+        self.solid = True 
         # increase alpha to increase price increase speed
         self.alpha = 2
         # game param to set (dynamic)
@@ -72,17 +79,18 @@ class Game:
 
     def buy_points(self, player, points):
         cost = points * self.point_price
-        if player.money >= cost and points <= 25:
+        if player.money >= cost and points <= self.max:
             player.money -= cost
             player.add_points(points)
             player.defended_points += points
             player.update_stealable() 
+            player.current_points += points
             self.god_points -= points
             self.god_pot += cost
             print(f"{player.name} bought {points} points for ${cost:.2f}.")
 
     def steal_points(self, player, target, points):
-        if target.points - target.defended_points >= points and points <= 25:
+        if target.points - target.defended_points >= points and points <= self.max:
             steal_price = 0.9 * self.point_price
             victim_compensation = 0.8 * self.point_price
             dev_team_cut = 0.1 * self.point_price
@@ -113,27 +121,51 @@ class Game:
     def night_phase(self):
         total_votes_yes = 0
         total_votes_no = 0
-        for player in self.players: 
-            # allow splitting, use get_votes function 
-            if not self.no_split:
-                if player.points > 0:
-                    print(f"\n{player.name}'s turn:")
-                    print(f"You have {player.points} points.")
-                    player.yes_vote = self.get_votes(player, 'yes')
-                    player.no_vote = player.points - player.yes_vote
-                    total_votes_yes += player.yes_vote
-                    total_votes_no += player.no_vote
-            else: # not allowing splitting, use get_vote_no_split
-                if player.points > 0:
-                    print(f"\n{player.name}'s turn:")
-                    print(f"You have {player.points} points.")
-                    player.side = self.get_votes_no_split(player)
-                    if player.side == 'yes':
-                        player.yes_vote = player.points
-                    else:
-                        player.no_vote = player.points
-                    total_votes_yes += player.yes_vote
-                    total_votes_no += player.no_vote
+        # with solidifying 
+        if self.solid: 
+            for player in self.players:
+                if not self.no_split:
+                    if player.current_points > 0: 
+                        print(f"\n{player.name}'s turn:")
+                        print(f"You have {player.current_points} points.")
+                        player.yes_vote = self.get_votes(player, 'yes')
+                        player.no_vote = player.current_points - player.yes_vote
+                        total_votes_yes += player.yes_vote
+                        total_votes_no += player.no_vote
+                else:
+                    if player.current_points > 0:
+                        print(f"\n{player.name}'s turn:")
+                        print(f"You have {player.current_points} points.")
+                        player.side = self.get_votes_no_split(player)
+                        if player.side == 'yes':
+                            player.yes_vote = player.current_points
+                        else:
+                            player.no_vote = player.current_points
+                        total_votes_yes += player.yes_vote
+                        total_votes_no += player.no_vote
+        # without solidifying
+        if not self.solid: 
+            for player in self.players: 
+                # allow splitting, use get_votes function 
+                if not self.no_split:
+                    if player.points > 0:
+                        print(f"\n{player.name}'s turn:")
+                        print(f"You have {player.points} points.")
+                        player.yes_vote = self.get_votes(player, 'yes')
+                        player.no_vote = player.points - player.yes_vote
+                        total_votes_yes += player.yes_vote
+                        total_votes_no += player.no_vote
+                else: # not allowing splitting, use get_vote_no_split
+                    if player.points > 0:
+                        print(f"\n{player.name}'s turn:")
+                        print(f"You have {player.points} points.")
+                        player.side = self.get_votes_no_split(player)
+                        if player.side == 'yes':
+                            player.yes_vote = player.points
+                        else:
+                            player.no_vote = player.points
+                        total_votes_yes += player.yes_vote
+                        total_votes_no += player.no_vote
         # determine majority side and total eliminated votes 
         if total_votes_yes > total_votes_no:
             majority_side = 'yes'
@@ -172,7 +204,10 @@ class Game:
                     player.points -= player.no_vote 
                 else: 
                     player.points -= player.no_vote
-                player.update_stealable()
+                player.update_stealable() 
+        # reset current_points back to 0. nexr buy will add current points 
+        for player in self.players: 
+            player.current_points = 0 
         
     def distribute_god_pot(self):
         total_points = sum(player.points for player in self.players)
@@ -240,7 +275,7 @@ class Game:
     def get_votes_no_split(self, player):     
         while True: 
             try:
-                vote = input(f"\n{player.name}'s turn: Do you want to vote 'yes' or 'no' (max {player.points} points)? ").strip().lower()
+                vote = input(f"\n{player.name}'s turn: Do you want to vote 'yes' or 'no' (max {player.current_points} points)? ").strip().lower()
                 if vote in ['yes', 'no']:
                     return vote
                 else:
@@ -251,13 +286,13 @@ class Game:
     def get_votes(self, player, vote_type):
         while True:
             try:
-                votes = int(getpass.getpass(f"\n{player.name}'s turn: Enter the number of points to vote '{vote_type}' (max {player.points}): ").strip())
-                if 0 <= votes <= player.points:
+                votes = int(getpass.getpass(f"\n{player.name}'s turn: Enter the number of points to vote '{vote_type}' (max {player.current_points}): ").strip())
+                if 0 <= votes <= player.current_points:
                     return votes
                 else:
-                    print(f"Invalid number of points. Please enter a number between 0 and {player.points}.")
+                    print(f"Invalid number of points. Please enter a number between 0 and {player.current_points}.")
             except ValueError:
-                print(f"Invalid input. Please enter a number between 0 and {player.points}.")
+                print(f"Invalid input. Please enter a number between 0 and {player.current_points}.")
 
     
     def ask_defense(self, player):
