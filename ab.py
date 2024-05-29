@@ -1,8 +1,3 @@
-# solidify 
-# for all points, after one round of a/b, the point is kept and are safe from future a/b.
-# pro: incentivize buying; con: punishing late joiner 
-# use price increase speed to strike a balance  with continuous a/b and open game  
-
 import getpass
 import random
 
